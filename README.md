@@ -1,18 +1,21 @@
 # Velo — Project Management SaaS Dashboard
 
-A full-featured, production-style Project Management SaaS Dashboard built with React, Vite, and Recharts. Designed as a portfolio-grade application showcasing modern UI/UX patterns, data visualization, and multi-view navigation.
+A full-featured, production-style Project Management SaaS Dashboard built with React, Vite, Recharts, and Supabase. Designed as a portfolio-grade application showcasing modern UI/UX patterns, real authentication, data visualization, and multi-view navigation.
 
-https://velo-dashboard.vercel.app/
+🔗 **Live Demo:** [velo-dashboard.vercel.app](https://velo-dashboard.vercel.app)
 
-![Velo Dashboard Preview](https://img.shields.io/badge/Status-Active-brightgreen) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![Vite](https://img.shields.io/badge/Vite-4-646CFF?logo=vite) ![Recharts](https://img.shields.io/badge/Recharts-2.12-22B5BF)
+![Velo Dashboard Preview](https://img.shields.io/badge/Status-Active-brightgreen) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![Vite](https://img.shields.io/badge/Vite-4-646CFF?logo=vite) ![Recharts](https://img.shields.io/badge/Recharts-2.12-22B5BF) ![Supabase](https://img.shields.io/badge/Supabase-Auth-3ECF8E?logo=supabase)
 
 ---
 
 ## ✨ Features
 
-### 🔐 Authentication
-- Login & Sign Up screens with form validation UI
-- Workspace-based onboarding flow
+### 🔐 Authentication (Supabase)
+- Real email/password login and sign up via Supabase Auth
+- Guest login — try the app instantly with one click
+- Session persistence across page refreshes
+- Sign out from the sidebar
+- Disable email confirmation for instant access (configurable)
 
 ### 📊 Overview Dashboard
 - Sprint velocity area chart (completed vs planned)
@@ -55,11 +58,13 @@ https://velo-dashboard.vercel.app/
 |---|---|
 | **React 18** | UI framework |
 | **Vite 4** | Build tool & dev server |
+| **Supabase** | Authentication & user management |
 | **Recharts** | Charts & data visualization |
 | **Google Fonts** | Syne (display) + DM Mono (data) |
-| CSS-in-JS (inline styles) | Component-scoped styling |
+| **CSS-in-JS** | Component-scoped inline styles |
+| **Vercel** | Deployment & hosting |
 
-> **Planned / Extension-ready:** Next.js, TypeScript, Tailwind CSS, Supabase auth & database, React Query for data fetching
+> **Roadmap:** Next.js App Router · TypeScript · Tailwind CSS · Real-time data with Supabase · Drag-and-drop Kanban
 
 ---
 
@@ -68,12 +73,13 @@ https://velo-dashboard.vercel.app/
 ### Prerequisites
 - Node.js **v18+** (v20+ recommended)
 - npm or yarn
+- A [Supabase](https://supabase.com) project (free tier works)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/velo-dashboard.git
+git clone https://github.com/samia-ahmed-git/velo-dashboard.git
 cd velo-dashboard
 
 # Install dependencies
@@ -94,13 +100,31 @@ npm run preview
 
 ---
 
+## 🔑 Supabase Setup
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Go to **Authentication → Providers → Email** and disable "Confirm email" for instant signups
+3. Create the guest user: **Authentication → Users → Add user**
+   - Email: `guest@velo.com`
+   - Password: `guest123`
+4. Replace the Supabase URL and anon key in `src/App.jsx`:
+
+```js
+const supabase = createClient(
+  "https://your-project.supabase.co",
+  "your-anon-key"
+);
+```
+
+---
+
 ## 📁 Project Structure
 
 ```
 velo-dashboard/
 ├── public/
 ├── src/
-│   ├── App.jsx          # Main application (all views & components)
+│   ├── App.jsx          # Main application (all views, components & auth)
 │   ├── main.jsx         # React entry point
 │   └── index.css        # Global reset & base styles
 ├── index.html
@@ -113,9 +137,10 @@ velo-dashboard/
 
 ## 🗺 Roadmap
 
+- [x] Supabase authentication (login, signup, guest, signout)
 - [ ] Migrate to **Next.js 14** (App Router)
 - [ ] Add **TypeScript** throughout
-- [ ] Integrate **Supabase** for auth & real-time data
+- [ ] Persist tasks & projects to **Supabase database**
 - [ ] Add **Tailwind CSS** for utility-first styling
 - [ ] Drag-and-drop Kanban with **@dnd-kit**
 - [ ] Real-time collaboration presence indicators
