@@ -2,6 +2,8 @@
 
 A full-featured, production-style Project Management SaaS Dashboard built with React, Vite, and Recharts. Designed as a portfolio-grade application showcasing modern UI/UX patterns, data visualization, and multi-view navigation.
 
+https://velo-dashboard.vercel.app/
+
 ![Velo Dashboard Preview](https://img.shields.io/badge/Status-Active-brightgreen) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![Vite](https://img.shields.io/badge/Vite-4-646CFF?logo=vite) ![Recharts](https://img.shields.io/badge/Recharts-2.12-22B5BF)
 
 ---
