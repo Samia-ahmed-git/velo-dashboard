@@ -111,8 +111,8 @@ npm run preview
 
 ```js
 const supabase = createClient(
-  "[https://your-project.supabase.co](https://odmezsczxtcjjwhoygvi.supabase.co)",
-  "sb_publishable_8wB5UQ-xU6M2ypYixWbIew_TEFkBGfb"
+  "https://your-project.supabase.co",
+  "your-anon-key"
 );
 ```
 
