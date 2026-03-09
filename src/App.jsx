@@ -14,7 +14,7 @@ import {
   XAxis, YAxis
 } from "recharts";
 
-// ─── Supabase Client ──────────────────────────────────────────────────────────
+// ─── Supabase ─────────────────────────────────────────────────────────────────
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -140,24 +140,49 @@ const KanbanCard = ({ task, colColor }) => (
 
 // ─── Auth Screen ──────────────────────────────────────────────────────────────
 const AuthScreen = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [pass,  setPass]  = useState("");
+  const [name,  setName]  = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleAuth = async () => {
     setError("");
-    if (!email || !pass) { setError("Please enter email and password."); return; }
-    if (!USER_ROLES[email]) { setError("Access denied. You are not authorized to use this app."); return; }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password: pass });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    onLogin(USER_ROLES[email]);
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+        if (error) throw error;
+      }
+      onLogin();
+    } catch (err) {
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuest = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: "guest@velo.com", password: "guest" });
+      if (error) throw error;
+      onLogin();
+    } catch (err) {
+      setError(err.message || "Guest login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ minHeight:"100vh", background:"#0A0F1E", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Syne', sans-serif", position:"relative", overflow:"hidden" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');`}</style>
       <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px)", backgroundSize:"40px 40px" }} />
       <div style={{ position:"absolute", top:"10%", left:"20%", width:400, height:400, background:"radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%)", pointerEvents:"none" }} />
       <div style={{ position:"absolute", bottom:"15%", right:"15%", width:500, height:500, background:"radial-gradient(circle, rgba(163,230,53,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
@@ -171,43 +196,68 @@ const AuthScreen = ({ onLogin }) => {
           </div>
         </div>
 
-        <h2 style={{ fontSize:26, fontWeight:800, color:"#F8FAFC", margin:"0 0 6px", letterSpacing:"-0.02em" }}>Welcome back</h2>
-        <p style={{ fontSize:14, color:"#64748B", margin:"0 0 28px", fontFamily:"'DM Mono', monospace" }}>Sign in to your workspace</p>
+        <h2 style={{ fontSize:26, fontWeight:800, color:"#F8FAFC", margin:"0 0 6px", letterSpacing:"-0.02em" }}>
+          {isLogin ? "Welcome back" : "Create account"}
+        </h2>
+        <p style={{ fontSize:14, color:"#64748B", margin:"0 0 28px", fontFamily:"'DM Mono', monospace" }}>
+          {isLogin ? "Sign in to your workspace" : "Start managing your projects"}
+        </p>
+
+        {error && (
+          <div style={{ background:"rgba(248,113,113,0.1)", border:"1px solid rgba(248,113,113,0.3)", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12, color:"#F87171", fontFamily:"'DM Mono', monospace" }}>
+            {error}
+          </div>
+        )}
 
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {!isLogin && (
+            <div>
+              <label style={{ fontSize:11, color:"#94A3B8", fontFamily:"'DM Mono', monospace", display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Full Name</label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" style={{ width:"100%", background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"10px 14px", color:"#F8FAFC", fontSize:14, fontFamily:"'DM Mono', monospace", outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+                onFocus={e => e.target.style.borderColor="#38BDF8"} onBlur={e => e.target.style.borderColor="#334155"} />
+            </div>
+          )}
           <div>
             <label style={{ fontSize:11, color:"#94A3B8", fontFamily:"'DM Mono', monospace", display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Email</label>
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="you@velo.com" type="email"
-              onKeyDown={e => e.key === "Enter" && handleLogin()}
-              style={{ width:"100%", background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"10px 14px", color:"#F8FAFC", fontSize:14, fontFamily:"'DM Mono', monospace", outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
-              onFocus={e => e.target.style.borderColor="#38BDF8"} onBlur={e => e.target.style.borderColor="#334155"} />
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" type="email" style={{ width:"100%", background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"10px 14px", color:"#F8FAFC", fontSize:14, fontFamily:"'DM Mono', monospace", outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor="#38BDF8"} onBlur={e => e.target.style.borderColor="#334155"} onKeyDown={e => e.key==="Enter" && handleAuth()} />
           </div>
           <div>
             <label style={{ fontSize:11, color:"#94A3B8", fontFamily:"'DM Mono', monospace", display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Password</label>
-            <input value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" type="password"
-              onKeyDown={e => e.key === "Enter" && handleLogin()}
-              style={{ width:"100%", background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"10px 14px", color:"#F8FAFC", fontSize:14, fontFamily:"'DM Mono', monospace", outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
-              onFocus={e => e.target.style.borderColor="#38BDF8"} onBlur={e => e.target.style.borderColor="#334155"} />
+            <input value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" type="password" style={{ width:"100%", background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"10px 14px", color:"#F8FAFC", fontSize:14, fontFamily:"'DM Mono', monospace", outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor="#38BDF8"} onBlur={e => e.target.style.borderColor="#334155"} onKeyDown={e => e.key==="Enter" && handleAuth()} />
+          </div>
+          <button onClick={handleAuth} disabled={loading} style={{ marginTop:6, background:"linear-gradient(135deg, #38BDF8, #0EA5E9)", border:"none", borderRadius:10, padding:"12px", color:"#0F172A", fontSize:14, fontWeight:800, fontFamily:"'Syne', sans-serif", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing:"0.02em" }}>
+            {loading ? "Please wait…" : isLogin ? "Sign In →" : "Create Account →"}
+          </button>
+
+          {/* Divider */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, margin:"4px 0" }}>
+            <div style={{ flex:1, height:1, background:"#1E293B" }} />
+            <span style={{ fontSize:11, color:"#475569", fontFamily:"'DM Mono', monospace" }}>or</span>
+            <div style={{ flex:1, height:1, background:"#1E293B" }} />
           </div>
 
-          {error && (
-            <div style={{ background:"rgba(248,113,113,0.1)", border:"1px solid rgba(248,113,113,0.3)", borderRadius:8, padding:"10px 14px", fontSize:12, color:"#F87171", fontFamily:"'DM Mono', monospace" }}>
-              {error}
-            </div>
-          )}
-
-          <button onClick={handleLogin} disabled={loading}
-            style={{ marginTop:4, background: loading ? "#334155" : "linear-gradient(135deg, #38BDF8, #0EA5E9)", border:"none", borderRadius:10, padding:"12px", color:"#0F172A", fontSize:14, fontWeight:800, fontFamily:"'Syne', sans-serif", cursor: loading ? "not-allowed" : "pointer", letterSpacing:"0.02em", transition:"opacity 0.2s" }}>
-            {loading ? "Signing in…" : "Sign In →"}
+          {/* Guest login */}
+          <button onClick={handleGuest} disabled={loading} style={{ background:"#0F172A", border:"1px solid #334155", borderRadius:10, padding:"11px", color:"#94A3B8", fontSize:13, fontFamily:"'DM Mono', monospace", cursor: loading ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, transition:"border-color 0.2s, color 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor="#38BDF8"; e.currentTarget.style.color="#38BDF8"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor="#334155"; e.currentTarget.style.color="#94A3B8"; }}>
+            <span>👤</span>
+            <span>Continue as Guest</span>
+            <span style={{ fontSize:10, background:"#1E293B", padding:"2px 8px", borderRadius:6 }}>viewer</span>
           </button>
         </div>
 
-        <div style={{ marginTop:20, padding:"12px 14px", background:"#0F172A", borderRadius:10, border:"1px solid #1E293B" }}>
-          <div style={{ fontSize:10, color:"#475569", fontFamily:"'DM Mono', monospace", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Demo credentials</div>
-          <div style={{ fontSize:11, color:"#64748B", fontFamily:"'DM Mono', monospace", lineHeight:1.8 }}>
-            <span style={{ color:"#94A3B8" }}>guest@velo.com</span> · guest · viewer<br/>
-           
-          </div>
+        <div style={{ marginTop:24, textAlign:"center", fontSize:13, color:"#64748B", fontFamily:"'DM Mono', monospace" }}>
+          {isLogin ? "No account? " : "Already have an account? "}
+          <span onClick={() => { setIsLogin(!isLogin); setError(""); }} style={{ color:"#38BDF8", cursor:"pointer" }}>
+            {isLogin ? "Sign up" : "Sign in"}
+          </span>
+        </div>
+
+        {/* Demo hint */}
+        <div style={{ marginTop:20, background:"#0F172A", borderRadius:10, padding:"10px 14px", fontSize:11, color:"#475569", fontFamily:"'DM Mono', monospace", lineHeight:1.6, textAlign:"center" }}>
+          Guest: <span style={{ color:"#94A3B8" }}>guest@velo.com</span> · guest · viewer
         </div>
       </div>
     </div>
@@ -217,8 +267,7 @@ const AuthScreen = ({ onLogin }) => {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -230,13 +279,10 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user?.email) setUserInfo(USER_ROLES[session.user.email] || null);
-      setAuthLoading(false);
+      setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user?.email) setUserInfo(USER_ROLES[session.user.email] || null);
-      else setUserInfo(null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -244,16 +290,20 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    setUserInfo(null);
   };
 
-  if (authLoading) return (
-    <div style={{ minHeight:"100vh", background:"#0A0F1E", display:"flex", alignItems:"center", justifyContent:"center" }}>
+  const userEmail = session?.user?.email || "";
+  const isGuest = userEmail === "guest@velo.com";
+  const displayName = session?.user?.user_metadata?.full_name || userEmail.split("@")[0] || "User";
+  const initials = displayName.slice(0,2).toUpperCase();
+
+  if (loading) return (
+    <div style={{ height:"100vh", background:"#0A0F1E", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ color:"#38BDF8", fontFamily:"'DM Mono', monospace", fontSize:13 }}>Loading…</div>
     </div>
   );
 
-  if (!session || !userInfo) return <AuthScreen onLogin={(info) => setUserInfo(info)} />;
+  if (!session) return <AuthScreen onLogin={() => {}} />;
 
   const navItems = [
     { id:"dashboard", icon:"◈", label:"Overview" },
@@ -311,17 +361,19 @@ export default function App() {
           {/* User */}
           <div style={{ padding:"16px 12px", borderTop:"1px solid #1E293B", display:"flex", flexDirection:"column", gap:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <Avatar initials={userInfo.initials} size={32} online={true} />
+              <Avatar initials={initials} size={32} online={true} />
               {sidebarOpen && (
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#E2E8F0" }}>{userInfo.name}</div>
-                  <div style={{ fontSize:10, color:"#64748B", fontFamily:"'DM Mono', monospace" }}>{userInfo.role}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#E2E8F0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName}</div>
+                  <div style={{ fontSize:10, color:"#64748B", fontFamily:"'DM Mono', monospace" }}>{isGuest ? "viewer · guest" : "admin"}</div>
                 </div>
               )}
             </div>
             {sidebarOpen && (
-              <button onClick={handleLogout} style={{ background:"rgba(248,113,113,0.08)", border:"1px solid rgba(248,113,113,0.2)", borderRadius:8, padding:"6px 10px", color:"#F87171", fontSize:11, fontFamily:"'DM Mono', monospace", cursor:"pointer", textAlign:"left" }}>
-                Sign out
+              <button onClick={handleLogout} style={{ background:"none", border:"1px solid #334155", borderRadius:8, padding:"6px 10px", color:"#64748B", fontSize:11, fontFamily:"'DM Mono', monospace", cursor:"pointer", textAlign:"left", transition:"color 0.15s, border-color 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.color="#F87171"; e.currentTarget.style.borderColor="#F87171"; }}
+                onMouseLeave={e => { e.currentTarget.style.color="#64748B"; e.currentTarget.style.borderColor="#334155"; }}>
+                ⎋ Sign out
               </button>
             )}
           </div>
@@ -364,7 +416,7 @@ export default function App() {
               )}
             </div>
 
-            <Avatar initials={userInfo.initials} size={36} online={true} />
+            <Avatar initials={initials} size={36} online={true} />
           </header>
 
           {/* Content */}
@@ -375,7 +427,7 @@ export default function App() {
               <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
-                    <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:"-0.02em", color:"#F8FAFC" }}>Good morning, {userInfo.name} 👋</h1>
+                    <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:"-0.02em", color:"#F8FAFC" }}>Good morning, Alex 👋</h1>
                     <p style={{ fontSize:13, color:"#64748B", fontFamily:"'DM Mono', monospace", marginTop:4 }}>Sprint 8 · Mar 9 – Mar 22, 2026</p>
                   </div>
                   <button onClick={() => setView("kanban")} style={{ background:"linear-gradient(135deg, #38BDF8, #0EA5E9)", border:"none", borderRadius:10, padding:"10px 20px", color:"#0F172A", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"'Syne', sans-serif" }}>
